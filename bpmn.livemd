@@ -13,10 +13,11 @@ Mix.install([
 process_key = "external_task_simulation"
 topic_possibilities = ["elixir", "python", "java", "go", "rust"]
 worker_id = "livebook-#{UUID.uuid4()}"
+num_of_processes = 5_000
 
 handled_topics =
-  Enum.map(topic_possibilities, fn topic ->
-    %{topicName: topic, lockDuration: System.convert_time_unit(10, :second, :millisecond)}
+  Enum.map(["elixir", "python", "java", "go", "rust"], fn topic ->
+    %{topicName: topic, lockDuration: System.convert_time_unit(30, :second, :millisecond)}
   end)
 ```
 
@@ -35,7 +36,7 @@ req =
 ## Start Processes
 
 ```elixir
-Enum.each(1..500, fn _i ->
+Task.async_stream(1..num_of_processes, fn _i ->
   Req.post!(req,
     url: "/process-definition/key/#{process_key}/start",
     json: %{
@@ -48,6 +49,10 @@ Enum.each(1..500, fn _i ->
     }
   )
 end)
+|> Enum.map(fn {:ok, %{status: status}} -> status end)
+|> Enum.group_by(fn x -> x end)
+|> Enum.map(fn {k, v} -> {k, Enum.count(v)} end)
+|> Enum.into(%{})
 ```
 
 <!-- livebook:{"branch_parent_index":0} -->
@@ -61,13 +66,13 @@ Req.post!(req,
   url: "/external-task/fetchAndLock",
   json: %{
     workerId: worker_id,
-    maxTasks: 5000,
+    maxTasks: 20_000,
     usePriority: false,
     topics: handled_topics
   }
 ).body
 |> Enum.map(fn %{"id" => id} -> id end)
-|> Enum.map(fn id ->
+|> Task.async_stream(fn id ->
   action =
     case :rand.uniform(100) do
       x when x in 1..85 -> :complete
@@ -111,8 +116,8 @@ Req.post!(req,
 
   {id, action, result}
 end)
-|> Enum.filter(fn {_, _, status} -> status == 204 end)
-|> Enum.group_by(fn {_, action, _} -> action end)
+|> Enum.filter(fn {:ok, {_, _, status}} -> status == 204 end)
+|> Enum.group_by(fn {:ok, {_, action, _}} -> action end)
 |> Enum.map(fn {k, v} -> {k, Enum.count(v)} end)
 |> Enum.into(%{})
 ```
