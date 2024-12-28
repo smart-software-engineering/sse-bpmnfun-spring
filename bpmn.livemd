@@ -1,0 +1,118 @@
+# Camunda External Task Testing
+
+```elixir
+Mix.install([
+  {:req, "~> 0.5.8"},
+  {:elixir_uuid, "~> 1.2"}
+])
+```
+
+## Setup
+
+```elixir
+process_key = "external_task_simulation"
+topic_possibilities = ["elixir", "python", "java", "go", "rust"]
+worker_id = "livebook-#{UUID.uuid4()}"
+
+handled_topics =
+  Enum.map(topic_possibilities, fn topic ->
+    %{topicName: topic, lockDuration: System.convert_time_unit(10, :second, :millisecond)}
+  end)
+```
+
+```elixir
+req =
+  Req.new(
+    base_url: "http://localhost:8080/engine-rest",
+    auth: {:basic, "demo:demo"}
+  )
+
+:ok
+```
+
+<!-- livebook:{"branch_parent_index":0} -->
+
+## Start Processes
+
+```elixir
+Enum.each(1..500, fn _i ->
+  Req.post!(req,
+    url: "/process-definition/key/#{process_key}/start",
+    json: %{
+      businessKey: UUID.uuid4(),
+      variables: %{
+        topics: %{
+          value: Enum.take_random(topic_possibilities, 3)
+        }
+      }
+    }
+  )
+end)
+```
+
+<!-- livebook:{"branch_parent_index":0} -->
+
+## Fetch some external task
+
+Randomly do one of 3 actions: complete, fail or bpmn error
+
+```elixir
+Req.post!(req,
+  url: "/external-task/fetchAndLock",
+  json: %{
+    workerId: worker_id,
+    maxTasks: 5000,
+    usePriority: false,
+    topics: handled_topics
+  }
+).body
+|> Enum.map(fn %{"id" => id} -> id end)
+|> Enum.map(fn id ->
+  action =
+    case :rand.uniform(100) do
+      x when x in 1..85 -> :complete
+      100 -> :error
+      _x -> :failure
+    end
+
+  result =
+    case action do
+      :complete ->
+        Req.post!(req,
+          url: "external-task/#{id}/complete",
+          json: %{
+            workerId: worker_id,
+            variables: %{
+              doneBy: %{value: worker_id}
+            }
+          }
+        ).status
+
+      :failure ->
+        Req.post!(req,
+          url: "external-task/#{id}/failure",
+          json: %{
+            workerId: worker_id,
+            errorMessage: "Because I said so",
+            retries: 10,
+            retryTimeout: System.convert_time_unit(5, :second, :millisecond)
+          }
+        ).status
+
+      :error ->
+        Req.post!(req,
+          url: "external-task/#{id}/bpmnError",
+          json: %{
+            workerId: worker_id,
+            errorCode: "livebook-error"
+          }
+        ).status
+    end
+
+  {id, action, result}
+end)
+|> Enum.filter(fn {_, _, status} -> status == 204 end)
+|> Enum.group_by(fn {_, action, _} -> action end)
+|> Enum.map(fn {k, v} -> {k, Enum.count(v)} end)
+|> Enum.into(%{})
+```

@@ -1,0 +1,15 @@
+spring:
+  application.name: bpmn-process
+  h2.console.enabled: false
+  security:
+    user:
+      name: ${ADMIN_USER_ID:demo}
+      password: ${ADMIN_USER_PASSWORD:demo}
+camunda.bpm:
+  admin-user:
+    id: ${ADMIN_USER_ID:demo}
+    password: ${ADMIN_USER_PASSWORD:demo}
+    firstName: Administration User
+  filter:
+    create: All Tasks
+

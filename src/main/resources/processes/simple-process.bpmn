@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_036gz9y" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.30.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.22.0">
+  <bpmn:process id="external_task_simulation" name="External Task Simulation" isExecutable="true" camunda:historyTimeToLive="5">
+    <bpmn:startEvent id="start_bpmn_id">
+      <bpmn:outgoing>Flow_0t5no1r</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="external_tasks_subprocess" camunda:asyncAfter="true">
+      <bpmn:incoming>Flow_0t5no1r</bpmn:incoming>
+      <bpmn:outgoing>Flow_1i5r9ye</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics camunda:asyncAfter="true" camunda:collection="${topics}" camunda:elementVariable="topic" />
+      <bpmn:startEvent id="Event_1swu88z">
+        <bpmn:outgoing>Flow_0aqn66a</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_0aqn66a" sourceRef="Event_1swu88z" targetRef="elixir_helper_id" />
+      <bpmn:sendTask id="elixir_helper_id" name="Help Me Elixir" camunda:asyncAfter="true" camunda:type="external" camunda:topic="${topic}">
+        <bpmn:incoming>Flow_0aqn66a</bpmn:incoming>
+        <bpmn:incoming>Flow_04j4odh</bpmn:incoming>
+        <bpmn:outgoing>Flow_0c0wfs6</bpmn:outgoing>
+      </bpmn:sendTask>
+      <bpmn:boundaryEvent id="python_timeout_id" attachedToRef="elixir_helper_id">
+        <bpmn:outgoing>Flow_0kzc1p0</bpmn:outgoing>
+        <bpmn:timerEventDefinition id="TimerEventDefinition_13ggenc">
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT5M</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:boundaryEvent id="python_bpmn_error_iud" attachedToRef="elixir_helper_id">
+        <bpmn:outgoing>Flow_1g0lfr9</bpmn:outgoing>
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_0ce18pn" />
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="Flow_0kzc1p0" sourceRef="python_timeout_id" targetRef="python_dynamic_form" />
+      <bpmn:sequenceFlow id="Flow_1g0lfr9" sourceRef="python_bpmn_error_iud" targetRef="python_dynamic_form" />
+      <bpmn:userTask id="python_dynamic_form" name="Elixir is behaving strange" camunda:asyncAfter="true">
+        <bpmn:extensionElements>
+          <camunda:formData />
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_0kzc1p0</bpmn:incoming>
+        <bpmn:incoming>Flow_1g0lfr9</bpmn:incoming>
+        <bpmn:outgoing>Flow_04j4odh</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="Flow_04j4odh" sourceRef="python_dynamic_form" targetRef="elixir_helper_id" />
+      <bpmn:endEvent id="Event_1juialk">
+        <bpmn:incoming>Flow_0c0wfs6</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_0c0wfs6" sourceRef="elixir_helper_id" targetRef="Event_1juialk" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_0t5no1r" sourceRef="start_bpmn_id" targetRef="external_tasks_subprocess" />
+    <bpmn:endEvent id="Event_1rf2tox">
+      <bpmn:incoming>Flow_0vgae1l</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1i5r9ye" sourceRef="external_tasks_subprocess" targetRef="information_id" />
+    <bpmn:sequenceFlow id="Flow_0vgae1l" sourceRef="information_id" targetRef="Event_1rf2tox" />
+    <bpmn:sendTask id="information_id" name="Information" camunda:asyncAfter="true" camunda:type="external" camunda:topic="information">
+      <bpmn:incoming>Flow_1i5r9ye</bpmn:incoming>
+      <bpmn:outgoing>Flow_0vgae1l</bpmn:outgoing>
+    </bpmn:sendTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="external_task_simulation">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="start_bpmn_id">
+        <dc:Bounds x="152" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_158wp0x_di" bpmnElement="information_id">
+        <dc:Bounds x="1040" y="230" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1rf2tox_di" bpmnElement="Event_1rf2tox">
+        <dc:Bounds x="1212" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0devr98_di" bpmnElement="external_tasks_subprocess" isExpanded="true">
+        <dc:Bounds x="330" y="70" width="620" height="400" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1swu88z_di" bpmnElement="Event_1swu88z">
+        <dc:Bounds x="370" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1ifsi8u_di" bpmnElement="elixir_helper_id">
+        <dc:Bounds x="580" y="130" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0qj0gsu_di" bpmnElement="python_dynamic_form">
+        <dc:Bounds x="580" y="330" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1juialk_di" bpmnElement="Event_1juialk">
+        <dc:Bounds x="862" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_05i4vaz_di" bpmnElement="python_timeout_id">
+        <dc:Bounds x="582" y="192" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0w2hdf3_di" bpmnElement="python_bpmn_error_iud">
+        <dc:Bounds x="642" y="192" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0aqn66a_di" bpmnElement="Flow_0aqn66a">
+        <di:waypoint x="406" y="170" />
+        <di:waypoint x="580" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kzc1p0_di" bpmnElement="Flow_0kzc1p0">
+        <di:waypoint x="600" y="228" />
+        <di:waypoint x="600" y="279" />
+        <di:waypoint x="630" y="279" />
+        <di:waypoint x="630" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1g0lfr9_di" bpmnElement="Flow_1g0lfr9">
+        <di:waypoint x="660" y="228" />
+        <di:waypoint x="660" y="279" />
+        <di:waypoint x="630" y="279" />
+        <di:waypoint x="630" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04j4odh_di" bpmnElement="Flow_04j4odh">
+        <di:waypoint x="580" y="370" />
+        <di:waypoint x="440" y="370" />
+        <di:waypoint x="440" y="190" />
+        <di:waypoint x="580" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0c0wfs6_di" bpmnElement="Flow_0c0wfs6">
+        <di:waypoint x="680" y="170" />
+        <di:waypoint x="862" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0t5no1r_di" bpmnElement="Flow_0t5no1r">
+        <di:waypoint x="188" y="270" />
+        <di:waypoint x="330" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1i5r9ye_di" bpmnElement="Flow_1i5r9ye">
+        <di:waypoint x="950" y="270" />
+        <di:waypoint x="1040" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0vgae1l_di" bpmnElement="Flow_0vgae1l">
+        <di:waypoint x="1140" y="270" />
+        <di:waypoint x="1212" y="270" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
